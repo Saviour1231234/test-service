@@ -1,0 +1,12 @@
+server:
+  port: 8080
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${DISCOVERY_URI}
+  instance:
+    hostname: ${HOST_NAME:user-test-project}
+feign:
+  autoconfiguration:
+    jackson:
+      enabled: true
