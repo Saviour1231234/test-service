@@ -1,12 +1,15 @@
-server:
-  port: 8080
+api:
+  gateway: ${GATEWAY_SERVICE:GATEWAY}
+spring:
+  data:
+    mongodb:
+      authentication-database: admin
+      database: tests
+      host: localhost
+
 eureka:
   client:
     serviceUrl:
       defaultZone: ${DISCOVERY_URI}
   instance:
     hostname: ${HOST_NAME:user-test-project}
-feign:
-  autoconfiguration:
-    jackson:
-      enabled: true

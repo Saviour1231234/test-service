@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: user-test-project
+  cloud:
+    config:
+      import: 'optional:configserver:'
+      uri: ${CONFIG_URI:http://config-server:8888}
+      enabled: true
+      failFast: true
+      retry:
+        max-attempts: 12

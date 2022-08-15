@@ -2,11 +2,13 @@ plugins {
 	id 'org.springframework.boot' version '2.7.2'
 	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
 	id 'java'
+	id 'com.bmuschko.docker-remote-api' version '7.3.0'
+	id 'com.bmuschko.docker-spring-boot-application' version '7.3.0'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+
 
 configurations {
 	compileOnly {
@@ -24,9 +26,58 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
+	implementation 'org.mapstruct:mapstruct:1.5.2.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.2.Final'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'com.h2database:h2:2.1.212'
+	implementation 'org.springdoc:springdoc-openapi-ui:1.6.9'
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.2'
+	implementation('org.springframework.cloud:spring-cloud-starter-bootstrap')
+	implementation files('libs/starter.jar')
+}
+ext {
+	set('springCloudVersion', "2021.0.3")
+}
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
 }
 
+
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage;
+
+task removeContainer(type: DockerRemoveContainer){
+	force = true
+	containerId = 'user-test-project'
+	onError(ex -> print ex.getMessage())
+}
+
+task removeImage(type: DockerRemoveImage){
+	dependsOn removeContainer
+	force = true
+	targetImageId('bobrenok/user-test-project')
+	onError(ex -> print ex.getMessage())
+}
+
+docker {
+	dockerBuildImage {
+		dependsOn removeImage
+		dockerFile = null
+		images = ['bobrenok/user-test-project']
+	}
+}
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(11)
+	}
+}
+task("recreate"){
+	group 'docker'
+	dependsOn dockerBuildImage
+}
 tasks.named('test') {
 	useJUnitPlatform()
 }

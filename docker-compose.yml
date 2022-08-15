@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  mongodb:
+    container_name: mongo_container
+    image: mongo
+    ports:
+      - 27018:27017
+    volumes:
+      - ./mongodb-volumes:/data/db
+  config-server:
+    image: bobrenok/cloud-config
+    container_name: config-server
+    ports:
+      - 8888:8888
+    environment:
+      HOST_NAME: config-server
+      SERVER_PORT: 8888
+  discovery-service:
+    image: bobrenok/discovery-service
+    container_name: discovery-service
+    depends_on:
+      - config-server
+    ports:
+      - 8761:8761
+    environment:
+      SERVER_PORT: 8761
+      EUREKA_INSTANCE_HOSTNAME: discovery-service
+      CONFIG_URI: http://config-server:8888
+  user-test-project:
+    image: bobrenok/user-test-project
+    container_name: user-test-project
+    ports:
+      - 8080:8080
+    depends_on:
+      - mongodb
+      - discovery-service
+      - config-server
+    environment:
+      SPRING_DATA_MONGODB_HOST: mongodb
+      HOST_NAME: user-test-project
+      GATEWAY_SERVICE: GATEWAY
+      TESTS_SERVICE: USER-TEST-PROJECT
+      SERVER_PORT: 8080
+      DISCOVERY_URI: http://discovery-service:8761/eureka
+      CONFIG_URI: http://config-server:8888
+  feign-server:
+    image: bobrenok/feign-server
+    container_name: feign-server
+    ports:
+      - 8081:8081
+    depends_on:
+      - user-test-project
+    environment:
+      GATEWAY_SERVICE: GATEWAY
+      HOST_NAME: feign-server
+      TESTS_SERVICE: USER-TEST-PROJECT
+      SERVER_PORT: 8081
+      DISCOVERY_URI: http://discovery-service:8761/eureka
+      CONFIG_URI: http://config-server:8888
+  gateway:
+    image: bobrenok/gateway
+    container_name: gateway
+    depends_on:
+      - config-server
+      - discovery-service
+    ports:
+      - 9090:9090
+    environment:
+      SERVER_PORT: 9090
+      HOST_NAME: gateway
+      TESTS_SERVICE: USER-TEST-PROJECT
+      DISCOVERY_URI: http://discovery-service:8761/eureka
+      CONFIG_URI: http://config-server:8888
+volumes:
+  mongodb-volume: { }
